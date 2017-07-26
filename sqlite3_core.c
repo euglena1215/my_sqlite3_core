@@ -6,6 +6,8 @@
 #define SUCCESS 1
 #define FAILURE 0
 
+static sqlite3 *conn;
+
 static int
 _rb_sqlite3_exec(
 	VALUE self,
@@ -43,7 +45,7 @@ rb_sqlite3_open(VALUE self, VALUE filename_str)
 {
 	char *filename = RSTRING_PTR(filename_str);
 	int status = 0;
-	sqlite3 *conn = NULL;
+	conn = NULL;
 
 	// sqlite3への接続
 	status = sqlite3_open(
@@ -54,8 +56,6 @@ rb_sqlite3_open(VALUE self, VALUE filename_str)
 	if (SQLITE_OK != status) {
 		return Qfalse;
 	}
-
-	rb_ivar_set(self, rb_intern("@conn"), conn);
 
 	return Qtrue;
 }
@@ -78,10 +78,8 @@ static VALUE
 rb_sqlite3_create_table(VALUE self, VALUE table_name_str)
 {
 	char *table_name = RSTRING_PTR(table_name_str);
-	printf("%s\n", table_name);
 	char query[255];
 	sprintf(query, "create table %s(id integer)", table_name);
-	printf("%s\n", query);
 	if (_rb_sqlite3_exec(self, query, NULL, NULL)) {
 		return Qtrue;
 	} else {
@@ -185,7 +183,6 @@ static VALUE
 rb_sqlite3_close(VALUE self)
 {
 	int status = 0;
-	sqlite3 *conn = rb_ivar_get(self, rb_intern("@conn"));
 
 	status = sqlite3_close(conn);
 	if (SQLITE_OK != status) {
@@ -204,7 +201,6 @@ _rb_sqlite3_exec(
 {
 	int status = 0;
 	char *err_msg = NULL;
-	sqlite3 *conn = rb_ivar_get(self, rb_intern("@conn"));
 
 	status = sqlite3_exec(
 		conn,
