@@ -52,12 +52,12 @@ rb_sqlite3_open(VALUE self, VALUE filename_str)
 		);
 
 	if (SQLITE_OK != status) {
-		exit(-1);
+		return Qfalse;
 	}
 
 	rb_ivar_set(self, rb_intern("@conn"), conn);
 
-	return self;
+	return Qtrue;
 }
 
 static VALUE
