@@ -16,7 +16,6 @@ _rb_sqlite3_exec(
 	void *callback_arg
 );
 
-
 /*
 	callback関数
 */
@@ -133,6 +132,10 @@ rb_sqlite3_insert(VALUE self, VALUE table_str, VALUE ary)
 				strcat(query, "'");
 				strcat(query, obj_str3);
 				strcat(query, "'");
+				break;
+
+			case T_NIL:
+				strcat(query, "NULL");
 				break;
 
 			default:
