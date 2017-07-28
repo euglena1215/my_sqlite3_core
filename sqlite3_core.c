@@ -8,36 +8,13 @@
 
 static sqlite3 *conn;
 
-static int
-_rb_sqlite3_exec(
-	VALUE self,
-	char *query,
-	int (*callback)(void*,int,char**,char**),
-	void *callback_arg
-);
-
-/*
-	callback関数
-*/
-
-// デバック用
-static int 
-print_resp(
-      void *get_prm,
-      int col_cnt,
-      char **row_txt,
-      char **col_name
-);
-
-// レコードをhash化してarrayにpushしていく
-static int
-record2hash(
-  	void *value_arr,
-	int col_cnt,
-	char **row_txt,
-    char **col_name 
-);
-
+static int _rb_sqlite3_exec(VALUE self, char *query, int (*callback)(void*,int,char**,char**), void *callback_arg);
+static int print_resp(void *get_prm, int col_cnt, char **row_txt, char **col_name);
+static int record2hash(void *value_arr,	int col_cnt, char **row_txt, char **col_name);
+static int convert_values_to_a(VALUE key, VALUE value, VALUE ary);
+static VALUE hash_to_array_all_keys(VALUE hash);
+static int convert_values_to_a(VALUE key, VALUE value, VALUE ary);
+static VALUE hash_to_array_all_values(VALUE hash);
 
 static VALUE
 rb_sqlite3_open(VALUE self, VALUE filename_str)
@@ -157,53 +134,6 @@ rb_sqlite3_insert(VALUE self, VALUE table_str, VALUE ary)
 	} else {
 		return Qfalse;
 	}
-}
-
-static int
-convert_keys_to_a(VALUE key, VALUE value, VALUE ary) {
-  if (key == Qundef) return ST_CONTINUE;
-
-  if (TYPE(value) == T_HASH) {
-    rb_hash_foreach(value, convert_keys_to_a, ary);
-  }
-
-  return rb_ary_push(ary, key);
-}
-
-static VALUE
-hash_to_array_all_keys(VALUE hash) {
-
-  VALUE ary;
-
-  ary = rb_ary_new();
-
-  rb_hash_foreach(hash, convert_keys_to_a, ary);
-
-  return ary;
-}
-
-static int
-convert_values_to_a(VALUE key, VALUE value, VALUE ary) {
-  if (key == Qundef) return ST_CONTINUE;
-
-  if (TYPE(value) == T_HASH) {
-    rb_hash_foreach(value, convert_values_to_a, ary);
-    return ST_CONTINUE;
-  } else { 
-    return rb_ary_push(ary, value);
-  }
-}
-
-static VALUE
-hash_to_array_all_values(VALUE hash) {
-
-  VALUE ary;
-
-  ary = rb_ary_new();
-
-  rb_hash_foreach(hash, convert_values_to_a, ary);
-
-  return ary;
 }
 
 static VALUE
@@ -358,6 +288,53 @@ print_resp(
 	}
 	printf("\n");
   	return 0;
+}
+
+static int
+convert_keys_to_a(VALUE key, VALUE value, VALUE ary) {
+  if (key == Qundef) return ST_CONTINUE;
+
+  if (TYPE(value) == T_HASH) {
+    rb_hash_foreach(value, convert_keys_to_a, ary);
+  }
+
+  return rb_ary_push(ary, key);
+}
+
+static VALUE
+hash_to_array_all_keys(VALUE hash) {
+
+  VALUE ary;
+
+  ary = rb_ary_new();
+
+  rb_hash_foreach(hash, convert_keys_to_a, ary);
+
+  return ary;
+}
+
+static int
+convert_values_to_a(VALUE key, VALUE value, VALUE ary) {
+  if (key == Qundef) return ST_CONTINUE;
+
+  if (TYPE(value) == T_HASH) {
+    rb_hash_foreach(value, convert_values_to_a, ary);
+    return ST_CONTINUE;
+  } else { 
+    return rb_ary_push(ary, value);
+  }
+}
+
+static VALUE
+hash_to_array_all_values(VALUE hash) {
+
+  VALUE ary;
+
+  ary = rb_ary_new();
+
+  rb_hash_foreach(hash, convert_values_to_a, ary);
+
+  return ary;
 }
 
 void
