@@ -86,7 +86,7 @@ rb_sqlite3_insert(VALUE self, VALUE table_str, VALUE ary)
 	char *table = RSTRING_PTR(table_str);
 	char query[500];
 
-	if (TYPE(ary) != T_HASH) {
+	if (TYPE(ary) != T_ARRAY) {
 		rb_raise(rb_eTypeError, "not valid value");
 	}
 
