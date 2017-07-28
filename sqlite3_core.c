@@ -176,6 +176,25 @@ rb_sqlite3_update(VALUE self, VALUE table_str, VALUE hash, VALUE id)
 }
 
 static VALUE
+rb_sqlite3_delete(VALUE self, VALUE table_str, VALUE id)
+{
+	char *table = RSTRING_PTR(table_str);
+	char query[500];
+
+	if (TYPE(id) != T_FIXNUM) {
+		rb_raise(rb_eTypeError, "not valid value");
+	}
+
+	sprintf(query, "delete from %s where id = %d", table, FIX2INT(id));
+
+	if (_rb_sqlite3_exec(self, query, NULL, NULL)) {
+		return Qtrue;
+	} else {
+		return Qfalse;
+	}
+}
+
+static VALUE
 rb_sqlite3_select(VALUE self, VALUE table_str, VALUE columns_str, VALUE where_str)
 {
 	char *table = RSTRING_PTR(table_str);
@@ -337,6 +356,7 @@ Init_sqlite3_core(void)
 	rb_define_method(cSqlite3Core, "add_column", rb_sqlite3_add_column, 3);
 	rb_define_method(cSqlite3Core, "insert", rb_sqlite3_insert,2);
 	rb_define_method(cSqlite3Core, "update", rb_sqlite3_update, 3);
+	rb_define_method(cSqlite3Core, "delete", rb_sqlite3_delete, 2);
 	rb_define_method(cSqlite3Core, "select", rb_sqlite3_select, 3);
 	rb_define_method(cSqlite3Core, "close", rb_sqlite3_close, 0);
 }
