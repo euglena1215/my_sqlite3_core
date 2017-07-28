@@ -86,29 +86,19 @@ rb_sqlite3_insert(VALUE self, VALUE table_str, VALUE ary)
 	char *table = RSTRING_PTR(table_str);
 	char query[500];
 
+	if (TYPE(ary) != T_HASH) {
+		rb_raise(rb_eTypeError, "not valid value");
+	}
+
 	sprintf(query, "insert into %s values(", table);
 
 	while (1) {
 		VALUE obj = rb_ary_shift(ary);
-		char obj_str1[255];
-		char obj_str2[255];
-		char *obj_str3;
 		switch (TYPE(obj)) {
 			case T_FIXNUM:
-				sprintf(obj_str1, "%d", FIX2INT(obj));
-				strcat(query, obj_str1);
-				break;
-
 			case T_FLOAT:
-				sprintf(obj_str2, "%lf", RFLOAT_VALUE(obj));
-				strcat(query, obj_str2);
-				break;
-
 			case T_STRING:
-				obj_str3 = RSTRING_PTR(obj);
-				strcat(query, "'");
-				strcat(query, obj_str3);
-				strcat(query, "'");
+				strcat(query, RSTRING_PTR(rb_funcall(obj, rb_intern("inspect"), 0)));
 				break;
 
 			case T_NIL:
