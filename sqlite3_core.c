@@ -159,6 +159,102 @@ rb_sqlite3_insert(VALUE self, VALUE table_str, VALUE ary)
 	}
 }
 
+static int
+convert_keys_to_a(VALUE key, VALUE value, VALUE ary) {
+  if (key == Qundef) return ST_CONTINUE;
+
+  if (TYPE(value) == T_HASH) {
+    rb_hash_foreach(value, convert_keys_to_a, ary);
+  }
+
+  return rb_ary_push(ary, key);
+}
+
+static VALUE
+hash_to_array_all_keys(VALUE hash) {
+
+  VALUE ary;
+
+  ary = rb_ary_new();
+
+  rb_hash_foreach(hash, convert_keys_to_a, ary);
+
+  return ary;
+}
+
+static int
+convert_values_to_a(VALUE key, VALUE value, VALUE ary) {
+  if (key == Qundef) return ST_CONTINUE;
+
+  if (TYPE(value) == T_HASH) {
+    rb_hash_foreach(value, convert_values_to_a, ary);
+    return ST_CONTINUE;
+  } else { 
+    return rb_ary_push(ary, value);
+  }
+}
+
+static VALUE
+hash_to_array_all_values(VALUE hash) {
+
+  VALUE ary;
+
+  ary = rb_ary_new();
+
+  rb_hash_foreach(hash, convert_values_to_a, ary);
+
+  return ary;
+}
+
+static VALUE
+rb_sqlite3_update(VALUE self, VALUE table_str, VALUE hash, VALUE id)
+{
+	char *table = RSTRING_PTR(table_str);
+	char query[500];
+
+	sprintf(query, "update %s set", table);
+
+	VALUE keys = hash_to_array_all_keys(hash);
+	VALUE values = hash_to_array_all_values(hash);
+
+	while (1) {
+		VALUE key = rb_ary_shift(keys);
+		VALUE value = rb_ary_shift(values);
+
+		sprintf(query, "%s %s = ", query, RSTRING_PTR(rb_funcall(key, rb_intern("to_s"), 0)));
+
+		switch (TYPE(value)) {
+			case T_FIXNUM:
+			case T_FLOAT:
+			case T_STRING:
+				strcat(query, RSTRING_PTR(rb_funcall(value, rb_intern("inspect"), 0)));
+				break;
+
+			case T_NIL:
+				strcat(query, "NULL");
+				break;
+
+			default:
+				rb_raise(rb_eTypeError, "not valid value");
+    			break;
+		}
+
+		if (RARRAY_LEN(keys) == 0) {
+			break;
+		}
+
+		strcat(query, ", ");
+	}
+
+	sprintf(query, "%s where id = %s", query, RSTRING_PTR(rb_funcall(id, rb_intern("to_s"), 0)));
+
+	if (_rb_sqlite3_exec(self, query, NULL, NULL)) {
+		return Qtrue;
+	} else {
+		return Qfalse;
+	}
+}
+
 static VALUE
 rb_sqlite3_select(VALUE self, VALUE table_str, VALUE columns_str, VALUE where_str)
 {
@@ -273,6 +369,7 @@ Init_sqlite3_core(void)
 	rb_define_method(cSqlite3Core, "create_table", rb_sqlite3_create_table, 1);
 	rb_define_method(cSqlite3Core, "add_column", rb_sqlite3_add_column, 3);
 	rb_define_method(cSqlite3Core, "insert", rb_sqlite3_insert,2);
+	rb_define_method(cSqlite3Core, "update", rb_sqlite3_update, 3);
 	rb_define_method(cSqlite3Core, "select", rb_sqlite3_select, 3);
 	rb_define_method(cSqlite3Core, "close", rb_sqlite3_close, 0);
 }
